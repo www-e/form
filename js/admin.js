@@ -1,5 +1,16 @@
 // js/admin.js
 
+// --- Page Loader Logic ---
+const pageLoader = document.getElementById('page-loader');
+document.querySelectorAll('.nav-link-item').forEach(link => {
+    link.addEventListener('click', (e) => {
+        // Show loader only for internal navigation, not external links
+        if (link.hostname === window.location.hostname) {
+            pageLoader.classList.remove('hidden');
+        }
+    });
+});
+
 const SUPABASE_URL = 'https://ocnqgfdsozhxowrvieqb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jbnFnZmRzb3poeG93cnZpZXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExMjYyOTUsImV4cCI6MjA2NjcwMjI5NX0.rNxaY22-rDx3s-Lso5i_8ZKce-asRHZAN-w__BmJOBI';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8,18 +19,20 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const GRADE_NAMES = { 'first': 'الصف الأول', 'second': 'الصف الثاني', 'third': 'الصف الثالث' };
 const GRADE_COLORS = { 'first': 'bg-blue-50', 'second': 'bg-green-50', 'third': 'bg-orange-50' };
 const SECTION_NAMES = { 'general': 'علمي رياضة', 'statistics': 'إحصاء (أدبي)', 'science': 'علمي', 'arts': 'أدبي' };
-const GROUP_NAMES = { 'sat_tue': 'سبت و ثلاثاء', 'sun_wed': 'أحد و أربعاء', 'mon_thu': 'اثنين و خميس', 'sat_tue_thu': 'سبت، ثلاثاء، خميس', 'sun_wed_fri': 'أحد، أربعاء، جمعة' };
 
 // --- Global State ---
 let allStudents = [];
 let currentFilter = {
     grade: 'all',
-    group: 'all', // Will store the combined group key, e.g., "sat_tue|15:15:00"
+    group: 'all', 
     searchQuery: ''
 };
 
 // --- Main Execution ---
 document.addEventListener('DOMContentLoaded', async () => {
+    // Hide loader once the page content is ready
+    if(pageLoader) pageLoader.classList.add('hidden');
+
     try {
         const { data, error } = await supabase.from('registrations_2025_2026').select('*').order('created_at', { ascending: false });
         if (error) throw error;
@@ -40,16 +53,14 @@ function initializeDashboard() {
 
 // --- Main Filtering & Rendering Logic ---
 function applyFilters() {
-    let filteredStudents = [...allStudents]; // Always start with a fresh copy
+    let filteredStudents = [...allStudents]; 
 
     if (currentFilter.grade !== 'all') {
         filteredStudents = filteredStudents.filter(s => s.grade === currentFilter.grade);
     }
     
     if (currentFilter.group !== 'all') {
-        // **THE FIX IS HERE:** We now split by the safe '|' character.
-        const [days, time] = currentFilter.group.split('|'); 
-        filteredStudents = filteredStudents.filter(s => s.days_group === days && s.time_slot === time);
+        filteredStudents = filteredStudents.filter(s => s.days_group === currentFilter.group);
     }
 
     const query = currentFilter.searchQuery.trim().toLowerCase();
@@ -103,16 +114,11 @@ function updateGroupFilterDropdown() {
     }
 
     const studentsInGrade = allStudents.filter(s => s.grade === currentFilter.grade);
-    const uniqueGroups = [...new Map(studentsInGrade.map(s => [`${s.days_group}|${s.time_slot}`, s])).values()];
+    const uniqueGroups = [...new Set(studentsInGrade.map(s => s.days_group))];
     
     groupSelect.innerHTML = '<option value="all">كل المجموعات</option>';
-    uniqueGroups.forEach(student => {
-        const option = document.createElement('option');
-        // **THE FIX IS HERE:** Using '|' as the separator for the value.
-        const groupKey = `${student.days_group}|${student.time_slot}`;
-        option.value = groupKey;
-        option.textContent = `${GROUP_NAMES[student.days_group]} - ${convertTo12HourFormat(student.time_slot)}`;
-        groupSelect.appendChild(option);
+    uniqueGroups.forEach(groupName => {
+        groupSelect.innerHTML += `<option value="${groupName}">${groupName}</option>`;
     });
     
     currentFilter.group = 'all';
@@ -127,10 +133,8 @@ function updateGroupStudentCount() {
         return;
     }
     
-    // **THE FIX IS HERE:** Also splitting by '|' to correctly count.
-    const [days, time] = currentFilter.group.split('|');
     const count = allStudents.filter(s => 
-        s.grade === currentFilter.grade && s.days_group === days && s.time_slot === time
+        s.grade === currentFilter.grade && s.days_group === currentFilter.group
     ).length;
     countElement.textContent = count;
 }
@@ -143,13 +147,15 @@ function renderTable(students) {
     }
     tableBody.innerHTML = students.map((student, index) => {
         const rowColor = GRADE_COLORS[student.grade] || 'bg-white';
+        const groupName = student.days_group || '—';
+
         return `
         <tr class="hover:bg-gray-100 border-b border-gray-200 text-sm ${rowColor}">
             <td class="p-3 text-center text-slate-600">${index + 1}</td>
             <td class="p-3 font-semibold text-slate-800">${student.student_name}</td>
             <td class="p-3 text-slate-700">${GRADE_NAMES[student.grade] || ''}</td>
             <td class="p-3 text-slate-700">${SECTION_NAMES[student.section] || '—'}</td>
-            <td class="p-3 text-slate-700">${GROUP_NAMES[student.days_group] || ''}</td>
+            <td class="p-3 text-slate-700">${groupName}</td>
             <td class="p-3 text-slate-700">${convertTo12HourFormat(student.time_slot)}</td>
             <td class="p-3 text-slate-700 text-left font-mono" dir="ltr">${student.student_phone}</td>
             <td class="p-3 text-slate-700 text-left font-mono" dir="ltr">${student.parent_phone}</td>

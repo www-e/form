@@ -5,14 +5,27 @@ import { createTimeBuilder } from './time-builder.js';
 import { createTableHandler } from './table-handler.js';
 import * as ScheduleService from '../../services/schedule-service.js';
 
+// --- Page Loader Logic ---
+const pageLoader = document.getElementById('page-loader');
+document.querySelectorAll('.nav-link-item').forEach(link => {
+    link.addEventListener('click', (e) => {
+        // Show loader only for internal navigation
+        if (link.hostname === window.location.hostname) {
+            pageLoader.classList.remove('hidden');
+        }
+    });
+});
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Hide loader once the page content is ready
+    if(pageLoader) pageLoader.classList.add('hidden');
+
     // --- State ---
     let allSchedules = [];
     let isEditingGroup = null;
 
     // --- Module Instances ---
     const timeBuilder = createTimeBuilder(elements);
-    // FIX: Pass only the necessary arguments. The data will be passed later.
     const tableHandler = createTableHandler(elements, handleEditGroup, handleDelete);
 
     // --- Core Functions ---
@@ -20,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoader(elements.loader, elements.schedulesTableContainer, true);
         try {
             allSchedules = await ScheduleService.fetchSchedules();
-            // FIX: Pass the freshly fetched data directly to the render and populate functions.
             tableHandler.render(allSchedules);
             tableHandler.populateGroupFilter(allSchedules);
         } catch (error) {
@@ -136,7 +148,6 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.form.addEventListener('submit', handleSave);
     elements.cancelBtn.addEventListener('click', resetForm);
     
-    // FIX: Pass the `allSchedules` array to the handler function.
     elements.gradeFiltersContainer.addEventListener('click', (e) => tableHandler.handleGradeFilterClick(e, allSchedules));
     elements.groupFilterSelect.addEventListener('change', () => tableHandler.render(allSchedules));
     

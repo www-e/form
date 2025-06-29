@@ -58,8 +58,8 @@ export function createTableHandler(elements, onEdit, onDelete) {
     
     // Attach delegated listeners
     elements.schedulesTableContainer.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-btn');
-        const deleteBtn = e.target.closest('.delete-btn');
+        const editBtn = e.target.closest('.edit');
+        const deleteBtn = e.target.closest('.delete');
         if (editBtn) onEdit(editBtn.dataset);
         if (deleteBtn) onDelete(deleteBtn.dataset.id);
     });

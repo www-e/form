@@ -157,3 +157,32 @@ body {
         opacity: 0.8;
     }
 }
+/* === PAGE LOADER STYLES === */
+ #page-loader {
+    position: fixed;
+    inset: 0;
+    background-color: var(--card-bg);
+    z-index: var(--z-maximum);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+    visibility: visible;
+}
+
+#page-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loader-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(var(--primary-rgb), 0.2);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

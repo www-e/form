@@ -1,5 +1,4 @@
-
-import { GROUP_NAMES } from '../config.js';
+// js/ui/dropdowns.js
 
 let activeDropdown = null;
 
@@ -93,8 +92,9 @@ export function updateSelectOptions(select, options, placeholder, isTimeSelect =
             option.dataset.status = opt.availability.status;
             option.dataset.text = opt.availability.text;
         } else {
+            // This is now used for groups, and opt.text comes directly from the DB.
             option.value = opt.value;
-            option.textContent = opt.text;
+            option.textContent = opt.text; 
         }
         select.appendChild(option);
     });
@@ -107,6 +107,7 @@ export function updateSelectOptions(select, options, placeholder, isTimeSelect =
 }
 
 function convertToArabicTime(time) {
+    if (!time) return ''; // Add a guard for safety
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const period = hour >= 12 ? 'م' : 'ص';
