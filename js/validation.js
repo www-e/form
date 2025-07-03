@@ -1,4 +1,4 @@
-
+// js/validation.js
 
 const rules = {
     studentName: {
@@ -17,13 +17,7 @@ const rules = {
         validate: value => value !== '',
         message: 'يرجى اختيار الصف الدراسي.'
     },
-    section: {
-        validate: (value, form) => {
-            const grade = form.querySelector('#grade').value;
-            return !['second', 'third'].includes(grade) || value !== '';
-        },
-        message: 'يرجى اختيار الشعبة.'
-    },
+    // The 'section' validation rule has been completely removed.
     group: {
         validate: value => value !== '',
         message: 'يرجى اختيار المجموعة.'
@@ -58,7 +52,8 @@ export const validateField = (fieldName, form) => {
     const rule = rules[fieldName];
     if (!rule) return true;
 
-    if (rule.validate(field.value, form)) {
+    // The validation function no longer needs the 'form' argument as no rule depends on it.
+    if (rule.validate(field.value)) {
         clearError(field);
         return true;
     } else {
@@ -98,9 +93,11 @@ export const initRealtimeValidation = (form, onPhoneBlur) => {
         }
     });
 
-
-    ['grade', 'section', 'group', 'time'].forEach(fieldName => {
+    // The 'section' field has been removed from this list.
+    ['grade', 'group', 'time'].forEach(fieldName => {
         const selectField = getFieldElement(form, fieldName);
-        selectField.addEventListener('change', () => validateField(fieldName, form));
+        if (selectField) { // Add a check in case a field is removed from HTML
+            selectField.addEventListener('change', () => validateField(fieldName, form));
+        }
     });
 };

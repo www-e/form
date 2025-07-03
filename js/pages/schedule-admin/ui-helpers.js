@@ -4,7 +4,7 @@ export const convertDigitsToArabic = (str) => str.toString().replace(/\d/g, d =>
 export const convertTo24HourFormat = (h, m, p) => { let hours = parseInt(h, 10); if (p === 'PM' && hours < 12) hours += 12; if (p === 'AM' && hours === 12) hours = 0; return `${String(hours).padStart(2, '0')}:${String(m).padStart(2, '0')}`; };
 export const convertTo12HourArabic = (time24) => { if (!time24) return ''; const [h, m] = time24.split(':'); const hour = parseInt(h, 10); const period = hour >= 12 ? 'م' : 'ص'; const hour12 = hour % 12 === 0 ? 12 : hour % 12; return `${convertDigitsToArabic(hour12)}:${convertDigitsToArabic(m)} ${period}`; };
 export const translateGrade = (g) => ({ first: 'الأول', second: 'الثاني', third: 'الثالث' }[g] || g);
-export const translateSection = (s) => ({ general: 'علمي رياضة', statistics: 'إحصاء', science: 'علمي', arts: 'أدبي' }[s] || s);
+// The 'translateSection' function has been removed.
 
 export function showToast(message, type = 'success') {
     const toastTypeClass = `toast-${type}`;

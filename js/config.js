@@ -8,10 +8,3 @@ export const GRADE_NAMES = {
     'second': 'الصف الثاني الثانوي',
     'third': 'الصف الثالث الثانوي'
 };
-
-export const SECTION_NAMES = {
-    'general': 'علمي رياضة',
-    'statistics': 'إحصاء (أدبي)',
-    'science': 'علمي',
-    'arts': 'أدبي'
-};

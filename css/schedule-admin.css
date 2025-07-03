@@ -16,7 +16,6 @@ body { background-color: #f8f9fa; }
 .nav-link-item:hover { color: var(--primary); background-color: rgba(var(--primary-rgb), 0.1); }
 .nav-link-item.active { color: white; background-color: var(--primary); }
 .brand-text-mobile { display: none; }
-.app-footer { text-align: center; padding: 1.5rem 0; margin-top: 2rem; background-color: var(--card-bg); border-top: 1px solid var(--border-color); color: var(--text-secondary); }
 
 /* ==================================
    CARDS, FORMS, & FILTERS
@@ -28,7 +27,7 @@ body { background-color: #f8f9fa; }
 .grade-filters { display: flex; gap: 0.5rem; background-color: var(--background); border-radius: var(--radius-full); padding: 0.5rem; }
 .filter-btn { border: none; background: transparent; padding: 0.5rem 1.25rem; border-radius: var(--radius-full); font-weight: var(--font-weight-semibold); color: var(--text-secondary); transition: all 0.25s ease; }
 .filter-btn:hover { color: white !important; opacity: 0.8; }
-.filter-btn.active { color: white !important; box-shadow: var(--shadow-sm); }
+.filter-btn.active { color: rgb(0, 0, 0) !important; box-shadow: var(--shadow-sm); }
 .filter-btn.grade-first:hover, .filter-btn.grade-first.active { background-color: #3b82f6; }
 .filter-btn.grade-second:hover, .filter-btn.grade-second.active { background-color: #10b981; }
 .filter-btn.grade-third:hover, .filter-btn.grade-third.active { background-color: #f97316; }
@@ -50,11 +49,7 @@ body { background-color: #f8f9fa; }
    TABLE & MOBILE CARD VIEW
 ================================== */
 .table thead th { font-weight: var(--font-weight-semibold); }
-.action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-start; /* FIX: Align buttons to the right in RTL */
-}
+.action-buttons { display: flex; gap: 0.5rem; justify-content: flex-start; }
 .btn-action { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; border: none; transition: all 0.2s; }
 .btn-action.edit { background-color: var(--info-bg); color: var(--info-color); }
 .btn-action.edit:hover { background-color: var(--info-color); color: white; }
@@ -102,4 +97,65 @@ body { background-color: #f8f9fa; }
     .time-builder { grid-template-columns: 1fr 1fr; }
     .time-builder .form-select, .time-builder .time-preview { grid-column: span 1; }
     .time-builder #addTimeBtn { grid-column: span 2; width: 100%; margin-top: 0.5rem; }
+}
+
+/* === NEW STICKY FOOTER & MODERN STYLING === */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+main.flex-grow-1 {
+    flex-grow: 1; /* This makes the main content take up all available vertical space */
+}
+.app-footer {
+    background-color: #1a1a2e; /* Dark, modern color */
+    color: #a9a9d8;
+    padding: 1.5rem 1rem;
+    border-top: 3px solid var(--primary);
+    font-size: 0.9rem;
+    margin-top: auto; /* Pushes footer to bottom in flex layout */
+}
+.app-footer .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.developer-credit {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.developer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--radius-full);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+.developer-link i {
+    color: var(--accent);
+    transition: transform 0.3s ease;
+}
+.developer-link:hover {
+    background-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.developer-link:hover i {
+    transform: rotate(12deg);
+}
+
+@media (max-width: 767px) {
+    .app-footer .container {
+        flex-direction: column;
+        text-align: center;
+    }
 }

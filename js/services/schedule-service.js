@@ -18,21 +18,15 @@ export async function deleteScheduleById(id) {
 export async function saveSchedule(records, isEditing, oldGroupData) {
     // If editing, first delete all old entries for that group to avoid conflicts.
     if (isEditing && oldGroupData) {
-        const { grade, section, group } = oldGroupData;
+        // The 'section' property is no longer part of oldGroupData.
+        const { grade, group } = oldGroupData;
 
-        // --- FIX START ---
-        // Build the delete query explicitly to handle NULL sections correctly.
-        // The `dataset.section` for a first-grade group is an empty string ("").
-        // We need to ensure this translates to an `IS NULL` check in the database.
+        // The delete query is now simpler. It matches only by group name and grade.
         let deleteQuery = supabase
             .from('schedules')
             .delete()
             .eq('group_name', group)
             .eq('grade', grade);
-
-        // If the section is empty/falsy (for first grade), use .is() for a strict NULL check.
-        // Otherwise (for second/third grade), use .eq() with the section value.
-        deleteQuery = section ? deleteQuery.eq('section', section) : deleteQuery.is('section', null);
 
         const { error: deleteError } = await deleteQuery;
         if (deleteError) throw deleteError;

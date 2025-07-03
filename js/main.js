@@ -1,20 +1,22 @@
 // js/main.js
-import { GRADE_NAMES, SECTION_NAMES } from './config.js';
+import { GRADE_NAMES } from './config.js';
 import { getAvailableGroups, getAvailableTimes, submitRegistration, loadSchedulesFromDB } from './services/registration-service.js';
 import { initDropdowns, updateSelectOptions } from './ui/dropdowns.js';
 import { SuccessModal, ThirdGradeModal, RestrictedGroupsModal, DuplicateRegistrationModal } from './ui/modals.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    initializeUpdateModal();
     const form = document.getElementById('registrationForm');
     if (!form) return;
 
+    // --- DOM Elements ---
     const gradeSelect = form.querySelector('#grade');
-    const sectionGroup = form.querySelector('#sectionGroup');
-    const sectionSelect = form.querySelector('#section');
+    // 'section' elements are no longer needed
     const groupSelect = form.querySelector('#group');
     const timeSelect = form.querySelector('#time');
     const submitBtn = form.querySelector('.submit-btn');
 
+    // --- Modal Instances ---
     const modals = {
         success: new SuccessModal(),
         thirdGrade: new ThirdGradeModal(),
@@ -22,48 +24,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         duplicate: new DuplicateRegistrationModal()
     };
     
+    // --- Initialize UI ---
     initDropdowns();
-
-    // Load dynamic schedule data from the database when the page starts
     await loadSchedulesFromDB();
-    console.log("Schedules loaded from database.");
+    console.log("Schedules loaded and ready.");
 
+    // --- Event Listeners & Logic ---
     gradeSelect.addEventListener('change', () => {
-        const grade = gradeSelect.value;
-        const isComplexGrade = ['second', 'third'].includes(grade);
-        
-        sectionGroup.style.display = isComplexGrade ? 'block' : 'none';
-        sectionSelect.required = isComplexGrade;
-
-        if (isComplexGrade) {
-            const sections = grade === 'third'
-                ? [{ value: 'general', text: SECTION_NAMES.general }, { value: 'statistics', text: SECTION_NAMES.statistics }]
-                : [{ value: 'science', text: SECTION_NAMES.science }, { value: 'arts', text: SECTION_NAMES.arts }];
-            updateSelectOptions(sectionSelect, sections, 'اختر الشعبة');
-            if (grade === 'third') modals.thirdGrade.show();
-        } else {
-             sectionSelect.value = '';
+        if (gradeSelect.value === 'third') {
+            modals.thirdGrade.show();
         }
         updateGroupOptions();
     });
 
-    sectionSelect.addEventListener('change', updateGroupOptions);
     groupSelect.addEventListener('change', updateTimeOptions);
 
     function updateGroupOptions() {
         const grade = gradeSelect.value;
-        const section = sectionSelect.value;
-        const groups = getAvailableGroups(grade, section);
+        // The call is now simpler, without 'section'
+        const groups = getAvailableGroups(grade);
         updateSelectOptions(groupSelect, groups, 'اختر المجموعة');
         groupSelect.disabled = !groups.length;
-        updateTimeOptions();
+        updateTimeOptions(); // Also update time options when groups change
     }
 
     function updateTimeOptions() {
         const grade = gradeSelect.value;
         const groupName = groupSelect.value;
-        const section = sectionSelect.value;
-        const times = getAvailableTimes(grade, groupName, section);
+        // The call is now simpler, without 'section'
+        const times = getAvailableTimes(grade, groupName);
         updateSelectOptions(timeSelect, times, 'اختر الموعد', true);
         timeSelect.disabled = !times.length;
     }
@@ -87,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 form.reset();
                 updateGroupOptions();
             } else {
-                if (result.errorCode === 'DUPLICATE_STUDENT') {
+                 if (result.errorCode === 'DUPLICATE_STUDENT') {
                     modals.duplicate.show(formData.get('student_phone'));
                 } else {
                     modals.restricted.show();
@@ -101,4 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             submitBtn.innerHTML = '<i class="fas fa-paper-plane ms-2"></i> تسجيل';
         }
     });
+
+    // Initial population
+    updateGroupOptions();
 });

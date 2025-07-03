@@ -1,4 +1,5 @@
 // js/pages/schedule-admin/main-admin.js
+import { initializeUpdateModal } from '../../components/update-modal.js';
 import { elements } from './dom-elements.js';
 import { showToast, showConfirmation, showLoader, populateSelect } from './ui-helpers.js';
 import { createTimeBuilder } from './time-builder.js';
@@ -9,7 +10,6 @@ import * as ScheduleService from '../../services/schedule-service.js';
 const pageLoader = document.getElementById('page-loader');
 document.querySelectorAll('.nav-link-item').forEach(link => {
     link.addEventListener('click', (e) => {
-        // Show loader only for internal navigation
         if (link.hostname === window.location.hostname) {
             pageLoader.classList.remove('hidden');
         }
@@ -17,7 +17,7 @@ document.querySelectorAll('.nav-link-item').forEach(link => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Hide loader once the page content is ready
+    initializeUpdateModal();
     if(pageLoader) pageLoader.classList.add('hidden');
 
     // --- State ---
@@ -41,21 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showLoader(elements.loader, elements.schedulesTableContainer, false);
         }
     }
-
-    function handleGradeChange() {
-        const grade = elements.gradeSelect.value;
-        const isComplex = ['second', 'third'].includes(grade);
-        elements.sectionContainer.style.display = isComplex ? 'block' : 'none';
-        elements.sectionSelect.required = isComplex;
-        if (isComplex) {
-            const sections = grade === 'second'
-                ? [{ v: 'science', t: 'علمي' }, { v: 'arts', t: 'أدبي' }]
-                : [{ v: 'general', t: 'علمي رياضة' }, { v: 'statistics', t: 'إحصاء (أدبي)' }];
-            populateSelect(elements.sectionSelect, sections, 'اختر الشعبة...');
-        } else {
-            elements.sectionSelect.innerHTML = '';
-        }
-    }
     
     function resetForm() {
         isEditingGroup = null;
@@ -64,9 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.formTitle.textContent = 'إضافة مجموعة جديدة';
         elements.saveBtn.innerHTML = '<i class="fas fa-plus"></i> حفظ المجموعة';
         elements.cancelBtn.style.display = 'none';
-        elements.sectionContainer.style.display = 'none';
         elements.groupNameCustomInput.style.display = 'none';
-        handleGradeChange();
     }
 
     // --- CRUD Handlers ---
@@ -77,13 +60,13 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmText: 'نعم، ابدأ', btnClass: 'btn-info',
             onConfirm: () => {
                 isEditingGroup = dataset;
-                const { grade, section, group } = dataset;
-                const groupSchedules = allSchedules.filter(s => s.grade === grade && s.section == (section || null) && s.group_name === group);
+                // 'section' is removed from the dataset destructuring
+                const { grade, group } = dataset;
+                // Filtering is now simpler, no longer checking for section
+                const groupSchedules = allSchedules.filter(s => s.grade === grade && s.group_name === group);
                 
                 elements.formTitle.textContent = `تعديل مجموعة: ${group}`;
                 elements.gradeSelect.value = grade;
-                handleGradeChange();
-                if (section) elements.sectionSelect.value = section;
                 
                 const standardGroup = Array.from(elements.groupNameSelect.options).find(opt => opt.value === group);
                 elements.groupNameSelect.value = standardGroup ? group : 'custom';
@@ -108,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     await ScheduleService.deleteScheduleById(id);
                     showToast('تم حذف الموعد بنجاح!', 'delete');
-                    await loadSchedules(); // Re-fetch and re-render
+                    await loadSchedules();
                 } catch (error) { showToast('خطأ في الحذف: ' + error.message, 'error'); }
             }
         });
@@ -126,12 +109,17 @@ document.addEventListener('DOMContentLoaded', () => {
             body: `هل أنت متأكد من حفظ مجموعة "${groupName}"؟`,
             confirmText: 'نعم، حفظ', btnClass: 'btn-primary',
             onConfirm: async () => {
-                const records = timeSlots.map(time => ({ grade: elements.gradeSelect.value, section: ['second', 'third'].includes(elements.gradeSelect.value) ? elements.sectionSelect.value : null, group_name: groupName, time_slot: time }));
+                // The records object is now simpler, it does not include 'section'
+                const records = timeSlots.map(time => ({ 
+                    grade: elements.gradeSelect.value, 
+                    group_name: groupName, 
+                    time_slot: time 
+                }));
                 try {
                     await ScheduleService.saveSchedule(records, !!isEditingGroup, isEditingGroup);
                     showToast(isEditingGroup ? 'تم تعديل المجموعة!' : 'تمت إضافة المجموعة!', 'success');
                     resetForm();
-                    await loadSchedules(); // Re-fetch and re-render
+                    await loadSchedules();
                 } catch (error) { showToast(error.code === '23505' ? 'خطأ: أحد هذه المواعيد موجود بالفعل.' : 'حدث خطأ: ' + error.message, 'error'); }
             }
         });
@@ -143,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     timeBuilder.setup();
     
-    elements.gradeSelect.addEventListener('change', handleGradeChange);
+    // The 'handleGradeChange' event listener is no longer needed as there are no dependent fields.
     elements.groupNameSelect.addEventListener('change', () => elements.groupNameCustomInput.style.display = (elements.groupNameSelect.value === 'custom') ? 'block' : 'none');
     elements.form.addEventListener('submit', handleSave);
     elements.cancelBtn.addEventListener('click', resetForm);

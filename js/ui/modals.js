@@ -1,3 +1,5 @@
+// js/ui/modals.js
+// This file is correct as-is. No changes are needed here.
 
 class BaseModal {
     constructor(modalClass, innerHTML) {
@@ -69,7 +71,6 @@ export class SuccessModal {
     constructor() {
         this.createModal();
     }
-
     createModal() {
         this.modal = document.createElement('div');
         this.modal.className = 'success-message info-modal';
@@ -80,7 +81,6 @@ export class SuccessModal {
             <button class="close-btn info-modal-close"><i class="fas fa-times"></i></button>
             <i class="fas fa-check-circle success-icon" style="font-size: 4rem; color: var(--success);"></i>
             <h3>تم تسجيل بياناتك بنجاح</h3>
-
             <div class="receipt-info-group">
                 <div class="receipt-data-row">
                     <span class="receipt-label"><i class="fas fa-user"></i> اسم الطالب</span>
@@ -99,32 +99,24 @@ export class SuccessModal {
                     <span class="receipt-value time-name"></span>
                 </div>
             </div>
-
             <div class="confirmation-details" style="text-align: right; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                 <h4 style="font-size: 1.2rem; color: var(--primary); margin-bottom: 0.75rem;"><i class="fas fa-exclamation-circle"></i> خطوة هامة لتأكيد الحجز</h4>
                 <p>لإتمام التسجيل، يرجى تأكيد الحجز بالحضور إلى السنتر.</p>
                 <p><strong>الموعد:</strong> السبت 7/12، من 4:00م حتى 6:00م.</p>
                 <p><strong>المطلوب:</strong> سداد رسوم تأكيد الحجز 150 جنيهًا.</p>
             </div>
-            
-            <!-- The button container and button are removed from here. -->
         </div>`;
-
         document.body.appendChild(this.modal);
-
         this.modal.querySelector('.close-btn').addEventListener('click', () => this.hide());
     }
-
     show(data) {
         this.modal.querySelector('.student-name').textContent = data.studentName || 'غير متوفر';
         this.modal.querySelector('.grade-name').textContent = data.gradeName || 'غير متوفر';
         this.modal.querySelector('.group-name').textContent = data.groupName || 'غير متوفر';
         this.modal.querySelector('.time-name').textContent = data.timeName || 'غير متوفر';
-        
         this.modal.style.display = 'flex';
         setTimeout(() => this.modal.classList.add('active'), 10);
     }
-
     hide() { 
         this.modal.classList.remove('active');
         setTimeout(() => {
