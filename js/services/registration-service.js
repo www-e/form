@@ -15,26 +15,33 @@ export async function loadSchedulesFromDB() {
     }
 }
 
-export function getAvailableGroups(grade) {
+export function getAvailableGroupTimes(grade) {
     if (!grade) return [];
-    // The logic is now simpler: just filter schedules by the selected grade.
     const relevantSchedules = allSchedules.filter(s => s.grade === grade);
-    const uniqueGroupNames = [...new Set(relevantSchedules.map(s => s.group_name))];
-    return uniqueGroupNames.map(name => ({ value: name, text: name }));
-}
 
-export function getAvailableTimes(grade, groupName) {
-    if (!grade || !groupName) return [];
-    // Filter is simpler, no longer needs to check for section.
-    const matchingTimeSlots = allSchedules.filter(s => s.grade === grade && s.group_name === groupName);
-    return matchingTimeSlots.map(schedule => ({
-        time: schedule.time_slot,
-        availability: { status: 'available', text: 'متاح' }
-    }));
+    relevantSchedules.sort((a, b) => {
+        if (a.group_name < b.group_name) return -1;
+        if (a.group_name > b.group_name) return 1;
+        if (a.time_slot < b.time_slot) return -1;
+        if (a.time_slot > b.time_slot) return 1;
+        return 0;
+    });
+    
+    return relevantSchedules.map(schedule => {
+        const time12hr = new Date(`1970-01-01T${schedule.time_slot}Z`).toLocaleTimeString('ar-EG', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'UTC'
+        });
+        return {
+            value: `${schedule.group_name}|${schedule.time_slot}`,
+            text: `${schedule.group_name} - ${time12hr}`
+        };
+    });
 }
 
 async function checkExistingRegistration(phone, grade) {
-    // The query is now simplified and works for all grades the same way.
     const { error, count } = await supabase.from('registrations_2025_2026')
         .select('id', { count: 'exact' })
         .eq('student_phone', phone)
@@ -44,18 +51,8 @@ async function checkExistingRegistration(phone, grade) {
     return count > 0;
 }
 
-export async function submitRegistration(formData) {
-    const registrationData = {
-        student_name: formData.get('student_name'),
-        student_phone: formData.get('student_phone'),
-        parent_phone: formData.get('parent_phone'),
-        grade: formData.get('grade'),
-        // 'section' is no longer part of the data being sent.
-        days_group: formData.get('days_group'),
-        time_slot: formData.get('time_slot')
-    };
-    
-    // Check for duplicates without the section logic.
+// UPDATED: Now accepts a plain data object directly
+export async function submitRegistration(registrationData) {
     const exists = await checkExistingRegistration(registrationData.student_phone, registrationData.grade);
     if (exists) {
         return { success: false, error: 'الطالب مسجل بالفعل.', errorCode: 'DUPLICATE_STUDENT' };
@@ -64,7 +61,9 @@ export async function submitRegistration(formData) {
     const { error } = await supabase.from('registrations_2025_2026').insert([registrationData]);
 
     if (error) {
-        if (error.code === '23505') { // Handles the new simplified unique index
+        // Log the detailed error from Supabase for better debugging
+        console.error("Supabase insert error:", error);
+        if (error.code === '23505') { 
             return { success: false, error: 'الطالب مسجل بالفعل.', errorCode: 'DUPLICATE_STUDENT' };
         }
         throw error;

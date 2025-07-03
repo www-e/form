@@ -17,22 +17,28 @@ const rules = {
         validate: value => value !== '',
         message: 'يرجى اختيار الصف الدراسي.'
     },
-    // The 'section' validation rule has been completely removed.
-    group: {
+    // UPDATED: Replaced 'group' and 'time' with a single rule for the combined dropdown.
+    groupTime: {
         validate: value => value !== '',
-        message: 'يرجى اختيار المجموعة.'
-    },
-    time: {
-        validate: value => value !== '',
-        message: 'يرجى اختيار الموعد.'
+        message: 'يرجى اختيار المجموعة والموعد.'
     },
 };
 
 const getFieldElement = (form, fieldName) => form.querySelector(`#${fieldName}`);
 
 const showError = (field, message) => {
-    field.classList.add('invalid');
-    const messageDiv = field.parentElement.querySelector('.validation-message');
+    // For custom dropdowns, we need to target the visual element
+    const container = field.parentElement;
+    const customDropdown = container.querySelector('.custom-dropdown-container .selected-option');
+    const targetElement = customDropdown || field;
+
+    targetElement.classList.add('invalid');
+    // Ensure the invalid style is visible for custom dropdowns
+    if(customDropdown) {
+        customDropdown.style.borderColor = 'var(--error)';
+    }
+
+    const messageDiv = container.querySelector('.validation-message');
     if (messageDiv) {
         messageDiv.textContent = message;
         messageDiv.style.display = 'block';
@@ -40,8 +46,16 @@ const showError = (field, message) => {
 };
 
 const clearError = (field) => {
-    field.classList.remove('invalid');
-    const messageDiv = field.parentElement.querySelector('.validation-message');
+    const container = field.parentElement;
+    const customDropdown = container.querySelector('.custom-dropdown-container .selected-option');
+    const targetElement = customDropdown || field;
+    
+    targetElement.classList.remove('invalid');
+    if(customDropdown) {
+        customDropdown.style.borderColor = ''; // Revert to default
+    }
+
+    const messageDiv = container.querySelector('.validation-message');
     if (messageDiv) {
         messageDiv.style.display = 'none';
     }
@@ -49,10 +63,10 @@ const clearError = (field) => {
 
 export const validateField = (fieldName, form) => {
     const field = getFieldElement(form, fieldName);
+    if (!field) return true; // If field doesn't exist, skip validation
     const rule = rules[fieldName];
     if (!rule) return true;
 
-    // The validation function no longer needs the 'form' argument as no rule depends on it.
     if (rule.validate(field.value)) {
         clearError(field);
         return true;
@@ -64,40 +78,30 @@ export const validateField = (fieldName, form) => {
 
 export const validateForm = (form) => {
     let isFormValid = true;
+    // We get the keys from the form itself to ensure we only validate existing fields
+    const formFields = Array.from(form.elements).map(el => el.id);
     for (const fieldName in rules) {
-        if (!validateField(fieldName, form)) {
-            isFormValid = false;
+        if (formFields.includes(fieldName)) {
+            if (!validateField(fieldName, form)) {
+                isFormValid = false;
+            }
         }
     }
     return isFormValid;
 };
 
-export const initRealtimeValidation = (form, onPhoneBlur) => {
-
-    const studentName = getFieldElement(form, 'studentName');
-    studentName.addEventListener('input', () => {
-        studentName.value = studentName.value.replace(/[^ \u0600-\u06FF]/g, '');
-        validateField('studentName', form);
-    });
-
-
-    ['studentPhone', 'parentPhone'].forEach(fieldName => {
-        const phoneField = getFieldElement(form, fieldName);
-        phoneField.addEventListener('input', () => {
-            phoneField.value = phoneField.value.replace(/\D/g, '').slice(0, 11);
+export const initRealtimeValidation = (form) => {
+    form.addEventListener('input', (e) => {
+        const fieldName = e.target.id;
+        if (rules[fieldName]) {
             validateField(fieldName, form);
-        });
-
-        if (fieldName === 'studentPhone') {
-            phoneField.addEventListener('blur', onPhoneBlur);
         }
     });
 
-    // The 'section' field has been removed from this list.
-    ['grade', 'group', 'time'].forEach(fieldName => {
-        const selectField = getFieldElement(form, fieldName);
-        if (selectField) { // Add a check in case a field is removed from HTML
-            selectField.addEventListener('change', () => validateField(fieldName, form));
+    form.addEventListener('change', (e) => {
+        const fieldName = e.target.id;
+         if (rules[fieldName]) {
+            validateField(fieldName, form);
         }
     });
 };

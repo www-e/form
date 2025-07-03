@@ -1,7 +1,7 @@
 // js/components/update-modal.js
 
 const MODAL_ID = 'whatsNewModal_v1'; // Change this version if you have a new update
-const MODAL_COOLDOWN_HOURS = 12;
+const MODAL_COOLDOWN_HOURS = 4; // Cooldown period in hours before showing the modal again
 
 const MODAL_HTML = `
 <div class="modal fade" id="whatsNewModal" tabindex="-1" aria-labelledby="whatsNewModalLabel" aria-hidden="true">

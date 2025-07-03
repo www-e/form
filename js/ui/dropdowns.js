@@ -35,17 +35,8 @@ function createDropdown(selectElement) {
             dropdownOption.className = 'dropdown-option';
             dropdownOption.dataset.value = option.value;
             
-            const timeText = document.createElement('span');
-            timeText.className = 'time-text';
-            timeText.textContent = option.textContent;
-            dropdownOption.appendChild(timeText);
-
-            if (option.dataset.status) {
-                const tag = document.createElement('span');
-                tag.className = `new-badge tag-${option.dataset.status}`;
-                tag.textContent = option.dataset.text || '';
-                dropdownOption.appendChild(tag);
-            }
+            // Simplified to only show the text content
+            dropdownOption.textContent = option.textContent;
 
             dropdownOption.addEventListener('click', e => {
                 e.stopPropagation();
@@ -82,20 +73,13 @@ export function initDropdowns() {
     document.addEventListener('keydown', e => e.key === 'Escape' && closeAllDropdowns());
 }
 
-export function updateSelectOptions(select, options, placeholder, isTimeSelect = false) {
+// The function is now simplified, the 'isTimeSelect' logic is removed.
+export function updateSelectOptions(select, options, placeholder) {
     select.innerHTML = `<option value="">${placeholder}</option>`;
     options.forEach(opt => {
         const option = document.createElement('option');
-        if (isTimeSelect) {
-            option.value = opt.time;
-            option.textContent = convertToArabicTime(opt.time);
-            option.dataset.status = opt.availability.status;
-            option.dataset.text = opt.availability.text;
-        } else {
-            // This is now used for groups, and opt.text comes directly from the DB.
-            option.value = opt.value;
-            option.textContent = opt.text; 
-        }
+        option.value = opt.value;
+        option.textContent = opt.text;
         select.appendChild(option);
     });
     select.dispatchEvent(new Event('update'));
@@ -104,15 +88,4 @@ export function updateSelectOptions(select, options, placeholder, isTimeSelect =
     if (customSelected) {
         customSelected.textContent = placeholder;
     }
-}
-
-function convertToArabicTime(time) {
-    if (!time) return ''; // Add a guard for safety
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const period = hour >= 12 ? 'م' : 'ص';
-    const hour12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-    const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-    const convert = num => num.toString().replace(/[0-9]/g, w => arabicNumbers[+w]);
-    return `${convert(hour12)}:${convert(minutes)} ${period}`;
 }

@@ -22,13 +22,16 @@ const GRADE_COLORS = { 'first': 'bg-blue-50', 'second': 'bg-green-50', 'third': 
 // --- Global State ---
 let allStudents = [];
 let currentFilter = { grade: 'all', group: 'all', searchQuery: '' };
-let studentDetailModal; // NEW: Variable to hold the modal instance
+let studentDetailModal;
+
+// --- Helper Functions ---
+const convertTo12HourFormat = time24 => time24 ? new Date(`1970-01-01T${time24}Z`).toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' }) : '—';
+const formatFullDate = dateStr => new Date(dateStr).toLocaleString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
 
 // --- Main Execution ---
 document.addEventListener('DOMContentLoaded', async () => {
     initializeUpdateModal();
     if(pageLoader) pageLoader.classList.add('hidden');
-    // NEW: Initialize the Bootstrap modal instance once the DOM is ready
     studentDetailModal = new bootstrap.Modal(document.getElementById('studentDetailModal'));
 
     try {
@@ -38,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeDashboard();
     } catch (error) {
         console.error('Error fetching data:', error);
-        document.getElementById('students-table-body').innerHTML = `<tr><td colspan="8" class="p-8 text-center text-red-500">فشل في تحميل البيانات. تأكد من صلاحيات الوصول (RLS).</td></tr>`;
+        document.getElementById('students-table-body').innerHTML = `<tr><td colspan="7" class="p-8 text-center text-red-500">فشل في تحميل البيانات. تأكد من صلاحيات الوصول (RLS).</td></tr>`;
     }
 });
 
@@ -55,9 +58,14 @@ function applyFilters() {
     if (currentFilter.grade !== 'all') {
         filteredStudents = filteredStudents.filter(s => s.grade === currentFilter.grade);
     }
+    
+    // ** THE FIX IS HERE (Part 1/2) **
+    // The filter logic now handles the combined "group|time" value.
     if (currentFilter.group !== 'all') {
-        filteredStudents = filteredStudents.filter(s => s.days_group === currentFilter.group);
+        const [filterGroup, filterTime] = currentFilter.group.split('|');
+        filteredStudents = filteredStudents.filter(s => s.days_group === filterGroup && s.time_slot === filterTime);
     }
+
     const query = currentFilter.searchQuery.trim().toLowerCase();
     if (query) {
         filteredStudents = filteredStudents.filter(s =>
@@ -82,6 +90,8 @@ function renderFilterCards() {
     container.querySelector('[data-grade="all"]').classList.add('active');
 }
 
+// ** THE FIX IS HERE (Part 2/2) **
+// This function now creates unique group-and-time options.
 function updateGroupFilterDropdown() {
     const groupFilterSection = document.getElementById('secondary-filter-section');
     const groupSelect = document.getElementById('group-filter');
@@ -90,9 +100,17 @@ function updateGroupFilterDropdown() {
         return;
     }
     const studentsInGrade = allStudents.filter(s => s.grade === currentFilter.grade);
-    const uniqueGroups = [...new Set(studentsInGrade.map(s => s.days_group))];
-    groupSelect.innerHTML = '<option value="all">كل المجموعات</option>';
-    uniqueGroups.forEach(groupName => { groupSelect.innerHTML += `<option value="${groupName}">${groupName}</option>`; });
+    
+    // Create unique options based on both group and time
+    const uniqueGroupTimes = [...new Set(studentsInGrade.map(s => `${s.days_group}|${s.time_slot}`))];
+    
+    groupSelect.innerHTML = '<option value="all">كل المجموعات والمواعيد</option>';
+    uniqueGroupTimes.forEach(combinedValue => {
+        const [groupName, timeSlot] = combinedValue.split('|');
+        const displayText = `${groupName} - ${convertTo12HourFormat(timeSlot)}`;
+        groupSelect.innerHTML += `<option value="${combinedValue}">${displayText}</option>`;
+    });
+
     currentFilter.group = 'all';
     groupSelect.value = 'all';
     groupFilterSection.classList.remove('hidden');
@@ -104,29 +122,29 @@ function updateGroupStudentCount() {
         countElement.textContent = '—';
         return;
     }
-    const count = allStudents.filter(s => s.grade === currentFilter.grade && s.days_group === currentFilter.group).length;
+    // Logic updated to handle the combined filter value
+    const [filterGroup, filterTime] = currentFilter.group.split('|');
+    const count = allStudents.filter(s => s.grade === currentFilter.grade && s.days_group === filterGroup && s.time_slot === filterTime).length;
     countElement.textContent = count;
 }
 
 function renderTable(students) {
     const tableBody = document.getElementById('students-table-body');
     if (!students.length) {
-        tableBody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-gray-400">لا يوجد طلاب يطابقون هذا البحث.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-400">لا يوجد طلاب يطابقون هذا البحث.</td></tr>`;
         return;
     }
     tableBody.innerHTML = students.map((student, index) => {
         const rowColor = GRADE_COLORS[student.grade] || 'bg-white';
-        // NEW: 1. Added `data-id` to the <tr> for easy identification.
-        // NEW: 2. Added `cursor-pointer` to make the row look clickable.
-        // NEW: 3. Wrapped phone numbers in `<a>` tags for smart WhatsApp links.
-        // NEW: 4. Added `onclick="event.stopPropagation();"` to the links to prevent the row click from firing when a link is clicked.
+        const timeFormatted = convertTo12HourFormat(student.time_slot);
+        const groupTime = [student.days_group, timeFormatted].filter(val => val && val !== '—').join(' - ') || '—';
+
         return `
         <tr class="hover:bg-gray-100 border-b border-gray-200 text-sm cursor-pointer ${rowColor}" data-id="${student.id}">
             <td class="p-3 text-center text-slate-600">${index + 1}</td>
             <td class="p-3 font-semibold text-slate-800">${student.student_name}</td>
             <td class="p-3 text-slate-700">${GRADE_NAMES[student.grade] || ''}</td>
-            <td class="p-3 text-slate-700">${student.days_group || '—'}</td>
-            <td class="p-3 text-slate-700">${convertTo12HourFormat(student.time_slot)}</td>
+            <td class="p-3 text-slate-700">${groupTime}</td>
             <td class="p-3 text-slate-700 text-left font-mono" dir="ltr">
                 <a href="https://wa.me/20${student.student_phone.substring(1)}" target="_blank" class="hover:underline text-green-600 font-semibold" onclick="event.stopPropagation();">
                     <i class="fab fa-whatsapp"></i> ${student.student_phone}
@@ -142,15 +160,12 @@ function renderTable(students) {
     `}).join('');
 }
 
-// NEW: This function builds the HTML for the modal body
 function renderModalContent(student) {
     const modalHeader = document.querySelector('#studentDetailModal .modal-header');
     const modalBody = document.getElementById('modal-body-content');
     
-    // Student's first initial for the avatar
     const studentInitial = student.student_name.charAt(0).toUpperCase();
 
-    // --- 1. Build the Header ---
     modalHeader.innerHTML = `
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         <div class="modal-header-avatar">${studentInitial}</div>
@@ -158,28 +173,22 @@ function renderModalContent(student) {
         <p class="modal-header-grade">${GRADE_NAMES[student.grade] || 'غير محدد'}</p>
     `;
 
-    // --- 2. Build the Body ---
+    const timeFormatted = convertTo12HourFormat(student.time_slot);
+    const groupTime = [student.days_group, timeFormatted].filter(val => val && val !== '—').join(' - ') || '—';
+
     modalBody.innerHTML = `
         <div class="modal-section">
             <h6 class="modal-section-title">بيانات التسجيل</h6>
             <div class="details-grid">
-                <div class="detail-pair">
+                <div class="detail-pair" style="grid-column: 1 / -1;">
                     <i class="fas fa-users detail-pair-icon"></i>
                     <div class="detail-pair-content">
-                        <p class="detail-pair-label">المجموعة</p>
-                        <p class="detail-pair-value">${student.days_group || '—'}</p>
-                    </div>
-                </div>
-                <div class="detail-pair">
-                    <i class="fas fa-clock detail-pair-icon"></i>
-                    <div class="detail-pair-content">
-                        <p class="detail-pair-label">الموعد</p>
-                        <p class="detail-pair-value">${convertTo12HourFormat(student.time_slot) || '—'}</p>
+                        <p class="detail-pair-label">المجموعة والموعد</p>
+                        <p class="detail-pair-value">${groupTime}</p>
                     </div>
                 </div>
             </div>
         </div>
-
         <div class="modal-section">
             <h6 class="modal-section-title">بيانات التواصل</h6>
             <div class="details-grid">
@@ -207,11 +216,10 @@ function renderModalContent(student) {
                 </div>
             </div>
         </div>
-
         <div class="modal-section">
              <h6 class="modal-section-title">معلومات إضافية</h6>
              <div class="details-grid">
-                <div class="detail-pair">
+                <div class="detail-pair" style="grid-column: 1 / -1;">
                     <i class="fas fa-calendar-check detail-pair-icon"></i>
                     <div class="detail-pair-content">
                         <p class="detail-pair-label">تاريخ التسجيل</p>
@@ -219,17 +227,6 @@ function renderModalContent(student) {
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-}
-
-// NEW: A helper function to avoid repeating HTML for each row in the modal
-function createModalDetailRow(icon, label, value) {
-    return `
-        <div class="flex items-center p-3 rounded-lg" style="background-color: var(--gradient-bg-subtle);">
-            <i class="fas ${icon} text-lg w-8 text-center" style="color: var(--primary);"></i>
-            <span class="font-semibold text-gray-600">${label}:</span>
-            <span class="mr-auto font-bold text-gray-800">${value}</span>
         </div>
     `;
 }
@@ -257,9 +254,6 @@ function setupEventListeners() {
         applyFilters();
     });
 
-    // NEW: Delegated event listener for the entire table body.
-    // It listens for clicks, finds the closest parent row with a `data-id`,
-    // finds the student data, and shows the modal.
     document.getElementById('students-table-body').addEventListener('click', e => {
         const row = e.target.closest('tr[data-id]');
         if (!row) return;
@@ -272,7 +266,3 @@ function setupEventListeners() {
         }
     });
 }
-
-// Helper Functions
-const convertTo12HourFormat = time24 => time24 ? new Date(`1970-01-01T${time24}Z`).toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' }) : '—';
-const formatFullDate = dateStr => new Date(dateStr).toLocaleString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });

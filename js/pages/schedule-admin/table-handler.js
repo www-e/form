@@ -16,8 +16,8 @@ export function createTableHandler(elements, onEdit, onDelete) {
         elements.tableBody.innerHTML = '';
         elements.mobileCardView.innerHTML = '';
         if (dataToRender.length === 0) {
-            // Colspan is now 6 because the section column was removed
-            const emptyHTML = '<tr><td colspan="6" class="text-center p-4">لا توجد بيانات تطابق الفلتر.</td></tr>';
+            // UPDATED: Colspan is now 5
+            const emptyHTML = '<tr><td colspan="5" class="text-center p-4">لا توجد بيانات تطابق الفلتر.</td></tr>';
             elements.tableBody.innerHTML = emptyHTML;
             elements.mobileCardView.innerHTML = `<div class="text-center p-4 text-muted">لا توجد بيانات.</div>`;
             return;
@@ -27,15 +27,15 @@ export function createTableHandler(elements, onEdit, onDelete) {
         dataToRender.forEach((s, index) => {
             if (!s.is_active) return;
             const colorClass = gradeColors[s.grade] || '';
-            // The data-section attribute is removed from the edit button
             const actionButtonsHTML = `<button class="btn-action edit" data-group="${s.group_name}" data-grade="${s.grade}" title="تعديل"><i class="fas fa-edit"></i></button><button class="btn-action delete" data-id="${s.id}" title="حذف"><i class="fas fa-trash-alt"></i></button>`;
             
-            // The table cell for section is removed
-            const desktopRowHTML = `<tr class="${colorClass}"><td class="text-center">${index + 1}</td><td><span class="badge ${colorClass}">${translateGrade(s.grade)}</span></td><td>${s.group_name}</td><td><span class="time-tag">${convertTo12HourArabic(s.time_slot)}</span></td><td>${new Date(s.created_at).toLocaleDateString('ar-EG')}</td><td><div class="action-buttons">${actionButtonsHTML}</div></td></tr>`;
+            // UPDATED: Merged group and time into a single cell
+            const groupTimeHTML = `<strong>${s.group_name}</strong><br><span class="time-tag">${convertTo12HourArabic(s.time_slot)}</span>`;
+            const desktopRowHTML = `<tr class="${colorClass}"><td class="text-center">${index + 1}</td><td><span class="badge ${colorClass}">${translateGrade(s.grade)}</span></td><td>${groupTimeHTML}</td><td>${new Date(s.created_at).toLocaleDateString('ar-EG')}</td><td><div class="action-buttons">${actionButtonsHTML}</div></td></tr>`;
             elements.tableBody.insertAdjacentHTML('beforeend', desktopRowHTML);
 
-            // The card-row for section is removed
-            const mobileCardHTML = `<div class="mobile-card ${colorClass}"><div class="card-header"><span class="group-name">${s.group_name}</span><span class="badge ${colorClass}">${translateGrade(s.grade)}</span></div><div class="card-body-grid"><div class="card-row"><span class="card-label">الموعد:</span><span class="card-value time-tag">${convertTo12HourArabic(s.time_slot)}</span></div></div><div class="card-footer action-buttons">${actionButtonsHTML}</div></div>`;
+            // UPDATED: Combined group and time into the card header
+            const mobileCardHTML = `<div class="mobile-card ${colorClass}"><div class="card-header"><span class="group-name">${s.group_name} - ${convertTo12HourArabic(s.time_slot)}</span><span class="badge ${colorClass}">${translateGrade(s.grade)}</span></div><div class="card-footer action-buttons">${actionButtonsHTML}</div></div>`;
             elements.mobileCardView.insertAdjacentHTML('beforeend', mobileCardHTML);
         });
     }

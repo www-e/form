@@ -1,19 +1,29 @@
 // js/main.js
 import { GRADE_NAMES } from './config.js';
-import { getAvailableGroups, getAvailableTimes, submitRegistration, loadSchedulesFromDB } from './services/registration-service.js';
+import { getAvailableGroupTimes, submitRegistration, loadSchedulesFromDB } from './services/registration-service.js';
 import { initDropdowns, updateSelectOptions } from './ui/dropdowns.js';
 import { SuccessModal, ThirdGradeModal, RestrictedGroupsModal, DuplicateRegistrationModal } from './ui/modals.js';
+// NEW: Import validation functions
+import { validateForm, initRealtimeValidation } from './validation.js';
+
+// Helper to format 24-hour time to 12-hour Arabic format
+const convertTo12HourFormat = (time24) => {
+    if (!time24) return 'غير محدد';
+    return new Date(`1970-01-01T${time24}Z`).toLocaleTimeString('ar-EG', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'UTC'
+    });
+};
 
 document.addEventListener('DOMContentLoaded', async () => {
-    initializeUpdateModal();
     const form = document.getElementById('registrationForm');
     if (!form) return;
 
     // --- DOM Elements ---
     const gradeSelect = form.querySelector('#grade');
-    // 'section' elements are no longer needed
-    const groupSelect = form.querySelector('#group');
-    const timeSelect = form.querySelector('#time');
+    const groupTimeSelect = form.querySelector('#groupTime'); // Updated selector
     const submitBtn = form.querySelector('.submit-btn');
 
     // --- Modal Instances ---
@@ -26,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // --- Initialize UI ---
     initDropdowns();
+    initRealtimeValidation(form); // NEW: Initialize real-time validation
     await loadSchedulesFromDB();
     console.log("Schedules loaded and ready.");
 
@@ -34,50 +45,63 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (gradeSelect.value === 'third') {
             modals.thirdGrade.show();
         }
-        updateGroupOptions();
+        updateGroupTimeOptions();
     });
 
-    groupSelect.addEventListener('change', updateTimeOptions);
-
-    function updateGroupOptions() {
+    function updateGroupTimeOptions() {
         const grade = gradeSelect.value;
-        // The call is now simpler, without 'section'
-        const groups = getAvailableGroups(grade);
-        updateSelectOptions(groupSelect, groups, 'اختر المجموعة');
-        groupSelect.disabled = !groups.length;
-        updateTimeOptions(); // Also update time options when groups change
-    }
-
-    function updateTimeOptions() {
-        const grade = gradeSelect.value;
-        const groupName = groupSelect.value;
-        // The call is now simpler, without 'section'
-        const times = getAvailableTimes(grade, groupName);
-        updateSelectOptions(timeSelect, times, 'اختر الموعد', true);
-        timeSelect.disabled = !times.length;
+        const groupTimes = getAvailableGroupTimes(grade);
+        updateSelectOptions(groupTimeSelect, groupTimes, 'اختر المجموعة والموعد');
+        groupTimeSelect.disabled = !groupTimes.length;
     }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // NEW: Add form validation check before doing anything else.
+        const isFormValid = validateForm(form);
+        if (!isFormValid) {
+            console.log("Validation failed. Form submission stopped.");
+            return; // Stop the submission if validation fails
+        }
+        
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التسجيل...';
         
         try {
             const formData = new FormData(form);
-            const result = await submitRegistration(formData);
+            const combinedValue = formData.get('group_time');
+            
+            const [days_group, time_slot] = combinedValue.split('|');
+            // Create a new data object instead of modifying FormData
+            const registrationData = {
+                student_name: formData.get('student_name'),
+                student_phone: formData.get('student_phone'),
+                parent_phone: formData.get('parent_phone'),
+                grade: formData.get('grade'),
+                days_group: days_group,
+                time_slot: time_slot
+            };
+
+            const result = await submitRegistration(registrationData);
 
             if (result.success) {
                 modals.success.show({
-                    studentName: formData.get('student_name'),
-                    gradeName: GRADE_NAMES[formData.get('grade')],
-                    groupName: formData.get('days_group'),
-                    timeName: timeSelect.options[timeSelect.selectedIndex].textContent
+                    studentName: registrationData.student_name,
+                    gradeName: GRADE_NAMES[registrationData.grade],
+                    groupName: registrationData.days_group,
+                    timeName: convertTo12HourFormat(registrationData.time_slot)
                 });
                 form.reset();
-                updateGroupOptions();
+                // After reset, re-run update to show placeholders
+                updateGroupTimeOptions(); 
+                // Clear validation states after successful submission and reset
+                document.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+                document.querySelectorAll('.validation-message').forEach(el => el.style.display = 'none');
+
             } else {
                  if (result.errorCode === 'DUPLICATE_STUDENT') {
-                    modals.duplicate.show(formData.get('student_phone'));
+                    modals.duplicate.show(registrationData.student_phone);
                 } else {
                     modals.restricted.show();
                 }
@@ -92,5 +116,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Initial population
-    updateGroupOptions();
+    updateGroupTimeOptions();
 });
