@@ -36,12 +36,15 @@ CREATE TABLE public.registrations_2025_2026 (
     CONSTRAINT idx_unique_student_per_grade UNIQUE(student_phone, grade)
 );
 
--- Step 5: Grant permissions for roles.
--- This allows your frontend forms to work.
+-- Step 5: Grant permissions for the public 'anon' role.
+-- These GRANTs are the base-level permissions before RLS policies are checked.
+
+-- Permissions for the schedules table (no changes needed here)
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.schedules TO anon;
-GRANT SELECT, INSERT ON TABLE public.registrations_2025_2026 TO anon;
--- This allows your logged-in admin to view student data.
-GRANT SELECT ON TABLE public.registrations_2025_2026 TO authenticated;
+
+-- Permissions for the student registrations table
+-- FIX: Added DELETE permission to allow the admin page to delete students.
+GRANT SELECT, INSERT, DELETE ON TABLE public.registrations_2025_2026 TO anon;
 
 -- Confirmation message
 SELECT 'Schema setup is complete.' AS status;
