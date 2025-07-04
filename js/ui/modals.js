@@ -26,9 +26,7 @@ export class ThirdGradeModal extends BaseModal {
                     <div class="info-icon"><i class="fas fa-graduation-cap"></i></div>
                     <h4>نظام الدراسة المتميز</h4>
                     <ul>
-                        <li><span class="info-highlight"><i class="fas fa-calendar-alt"></i> حضور مكثف:</span> <strong>ثلاثة أيام في الأسبوع</strong></li>
-                        <li><span class="info-highlight"><i class="fas fa-clipboard-check"></i> امتحان شامل:</span> <strong>آخر جمعة من كل شهر</strong></li>
-                        <li><span class="info-highlight"><i class="fas fa-book"></i> شمولية التدريس:</span> المنهج يغطي <strong>العامة والأزهر</strong></li>
+                        <li><span class="info-highlight"><i class="fas fa-calendar-alt"></i>امتحانات</span> <strong>كويز كل حصة</strong></li>
                     </ul>
                 </div>
             </div>`);
@@ -102,8 +100,8 @@ export class SuccessModal {
             <div class="confirmation-details" style="text-align: right; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                 <h4 style="font-size: 1.2rem; color: var(--primary); margin-bottom: 0.75rem;"><i class="fas fa-exclamation-circle"></i> خطوة هامة لتأكيد الحجز</h4>
                 <p>لإتمام التسجيل، يرجى تأكيد الحجز بالحضور إلى السنتر.</p>
-                <p><strong>الموعد:</strong> السبت 7/12، من 4:00م حتى 6:00م.</p>
-                <p><strong>المطلوب:</strong> سداد رسوم تأكيد الحجز 150 جنيهًا.</p>
+                <p><strong>الموعد:</strong>  من 4:00م حتى 10:00م.</p>
+                <p><strong>المطلوب:</strong> سداد رسوم تأكيد الحجز 50 جنيهًا.</p>
             </div>
         </div>`;
         document.body.appendChild(this.modal);
