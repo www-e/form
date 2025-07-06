@@ -1,5 +1,6 @@
 // js/admin.js
 import { initializeUpdateModal } from './components/update-modal.js';
+import { initializePdfPrinter } from './features/pdf-printer.js';
 
 // --- Page Loader Logic ---
 const pageLoader = document.getElementById('page-loader');
@@ -74,6 +75,7 @@ function initializeDashboard() {
     renderFilterCards();
     applyFilters();
     setupEventListeners();
+    initializePdfPrinter(allStudents, currentFilter, GRADE_NAMES, convertTo12HourFormat);
 }
 
 // --- Main Filtering & Rendering Logic ---
