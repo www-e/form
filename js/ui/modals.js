@@ -97,12 +97,6 @@ export class SuccessModal {
                     <span class="receipt-value time-name"></span>
                 </div>
             </div>
-            <div class="confirmation-details" style="text-align: right; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                <h4 style="font-size: 1.2rem; color: var(--primary); margin-bottom: 0.75rem;"><i class="fas fa-exclamation-circle"></i> خطوة هامة لتأكيد الحجز</h4>
-                <p>لإتمام التسجيل، يرجى تأكيد الحجز بالحضور إلى السنتر.</p>
-                <p><strong>الموعد:</strong>  من 4:00م حتى 10:00م.</p>
-                <p><strong>المطلوب:</strong> سداد رسوم تأكيد الحجز 50 جنيهًا.</p>
-            </div>
         </div>`;
         document.body.appendChild(this.modal);
         this.modal.querySelector('.close-btn').addEventListener('click', () => this.hide());
